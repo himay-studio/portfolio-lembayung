@@ -47,7 +47,14 @@ async function freshPage(ctx, url, { seenWelcome = true, scrollThrough = true } 
   const page = await ctx.newPage();
   await page.goto("http://localhost:4331" + url, { waitUntil: "networkidle" });
   if (seenWelcome) {
-    await page.evaluate(() => sessionStorage.setItem("wanantara_welcome_seen", "1"));
+    // Stage 4 fix: this said `wanantara_welcome_seen`, a leftover from the repo this harness was
+    // copied from. The key never matched, so the R13 modal was still open in every "clean" shot
+    // and the R37 banner appeared in the slow ones, which is exactly the R51 evidence Stage 8
+    // relies on. Both one-per-session overlays are suppressed here now.
+    await page.evaluate(() => {
+      sessionStorage.setItem("lembayung_welcome_seen", "1");
+      sessionStorage.setItem("lembayung_cta_float_seen", "1");
+    });
     await page.reload({ waitUntil: "networkidle" });
   }
   if (scrollThrough) {

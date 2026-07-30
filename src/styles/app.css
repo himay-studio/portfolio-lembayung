@@ -1,0 +1,1659 @@
+/* ==========================================================================================
+   Lembayung reservation panel. Stage 4, Webapp Architect.
+
+   Scope: this file is imported by src/app/app/layout.tsx ONLY and every selector in it is
+   namespaced under .app-* or under a body:has(.app-shell) guard, so it can never reach a
+   marketing page. It reuses the tokens declared in src/app/site.css section 1 and does not
+   redeclare a single colour, because a second source of truth for the palette is how a build
+   ends up with two greens.
+
+   Rule anchors that live here rather than in a component:
+     R10  zero radius, inherited from the site.css reset. No oval in the panel.
+     R19  no horizontal page overflow at 375, 480, 768, 1025. Wide tables scroll in their OWN box.
+     R20  the sidebar is a DARK ground and the workspace is LIGHT, so every class used on both
+          ships an explicit dark variant. Ratios are measured and written next to each pair.
+     R46  the route transition targets .app-page, so the sidebar and the topbar never animate.
+     R47  44px tap targets, mobile topbar is one clean flex row.
+     R53  the mobile drawer and the record drawer are PORTALLED to document.body, so no filtered
+          or animated ancestor can become their containing block.
+     R57  nothing absolutely positioned is left in layout while closed. The two overlays here
+          UNMOUNT rather than hide, so their closed layout footprint is zero by construction.
+   ========================================================================================== */
+
+/* ----------------------------------------------------------------- 0. the marketing chrome
+
+   The panel is an application, so the marketing navbar, footer, announcement bar and the two
+   floating conversion overlays do not belong on it. They are removed in React by
+   AppChromeGate in the root layout, which is the load bearing mechanism: WelcomeModal sets
+   `document.body.style.overflow = hidden` while open and traps focus, so merely HIDING it with
+   CSS would leave the panel unscrollable and the keyboard trapped in an invisible dialog.
+
+   This block is belt and braces for the single frame before hydration, nothing more. */
+body:has(.app-shell) > .announce,
+body:has(.app-shell) > .site-header,
+body:has(.app-shell) > .footer,
+body:has(.app-shell) > .wa-float,
+body:has(.app-shell) > .cta-float {
+  display: none;
+}
+
+/* ----------------------------------------------------------------- 1. shell */
+
+.app-shell {
+  --app-side: 264px;
+  --app-rail: 76px;
+  --app-top: 60px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--kanvas-2);
+}
+
+@media (min-width: 1025px) {
+  .app-shell {
+    --app-top: 64px;
+    grid-template-columns: var(--app-side) minmax(0, 1fr);
+  }
+  /* the collapsed rail. Written on <html> by a pre paint inline script in the /app layout so a
+     returning visitor never sees the wide sidebar flash to a rail after hydration. */
+  html[data-app-rail='1'] .app-shell {
+    grid-template-columns: var(--app-rail) minmax(0, 1fr);
+  }
+}
+
+/* R46. site.css animates <main class="page-enter">, which here would fade the SIDEBAR and the
+   topbar on every navigation and read as a full page flash rather than as an app. The outer
+   animation is switched off when the shell is present and the CONTENT REGION animates instead.
+   :has() is a progressive enhancement: without it the outer fade still runs, so the route change
+   is still animated either way and R46 holds. */
+main.page-enter:has(.app-shell) {
+  animation: none;
+}
+.app-page {
+  animation: appIn 220ms var(--ease) both;
+}
+@keyframes appIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ----------------------------------------------------------------- 2. sidebar, DARK ground
+
+   Measured on --senja-pekat #15102A:
+     --kanvas   16,66:1     nav label, active label
+     --kabut     9,23:1     group heading, secondary line
+     --bara      9,20:1     active marker, accent
+   Active item ground --lembayung #4A3573 with --kanvas label is 9,41:1. */
+
+.app-side {
+  display: none;
+}
+
+@media (min-width: 1025px) {
+  .app-side {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--senja-pekat);
+    color: var(--kanvas);
+    border-right: 1px solid var(--garis-inv);
+  }
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: var(--app-top);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--garis-inv);
+  text-decoration: none;
+  color: inherit;
+}
+.app-mark {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  background: var(--bara);
+  color: var(--senja-pekat); /* 9,20:1 */
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1;
+}
+/* R50: the wordmark and the category line are separate BLOCK children with an explicit gap.
+   An inline <small> here renders the single line `LembayungPANEL RESERVASI`. */
+.app-lockup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.app-word {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--kanvas);
+}
+.app-kategori {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--kabut); /* 9,23:1 */
+}
+
+.app-nav {
+  flex: 1 1 auto;
+  padding: 0.75rem 0.5rem 1rem;
+}
+.app-nav-group + .app-nav-group {
+  margin-top: 1.25rem;
+}
+.app-nav-head {
+  display: block;
+  padding: 0 0.6rem 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kabut); /* 9,23:1 */
+}
+.app-nav-list {
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.app-nav-list li + li {
+  margin-top: 2px;
+}
+
+.app-nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 44px; /* R47 */
+  padding: 0.5rem 0.7rem;
+  color: var(--kanvas); /* 16,66:1 */
+  text-decoration: none;
+  border-left: 4px solid transparent;
+  transition: background-color var(--dur-cepat) var(--ease), border-color var(--dur-cepat) var(--ease);
+}
+.app-nav-link:hover {
+  background: rgba(247, 243, 236, 0.1); /* label stays 13,03:1 on the composited ground */
+}
+.app-nav-link.is-active {
+  background: var(--lembayung);
+  border-left-color: var(--bara);
+}
+.app-nav-ikon {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  color: var(--bara); /* 9,20:1, and it is the active marker's colour too */
+}
+.app-nav-link.is-active .app-nav-ikon {
+  color: var(--kanvas);
+}
+/* R50 again: label and its one line description are blocks with a gap, never inline siblings. */
+.app-nav-teks {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.app-nav-label {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.app-nav-ket {
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--kabut); /* 9,23:1 */
+}
+.app-nav-link.is-active .app-nav-ket {
+  color: var(--kanvas);
+}
+
+.app-side-foot {
+  padding: 0.75rem;
+  border-top: 1px solid var(--garis-inv);
+}
+.app-user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.25rem 0.75rem;
+}
+.app-avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: var(--lembayung);
+  color: var(--kanvas); /* 9,41:1 */
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.app-user-nama {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--kanvas);
+}
+.app-user-peran {
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--kabut);
+}
+
+/* the rail. Labels collapse, icons stay, and every control keeps its 44px target. */
+@media (min-width: 1025px) {
+  html[data-app-rail='1'] .app-lockup,
+  html[data-app-rail='1'] .app-nav-teks,
+  html[data-app-rail='1'] .app-nav-head,
+  html[data-app-rail='1'] .app-user > div {
+    display: none;
+  }
+  html[data-app-rail='1'] .app-brand,
+  html[data-app-rail='1'] .app-nav-link,
+  html[data-app-rail='1'] .app-user {
+    justify-content: center;
+    padding-inline: 0.5rem;
+  }
+  html[data-app-rail='1'] .app-nav-link {
+    border-left-width: 3px;
+  }
+}
+
+.app-rail-btn {
+  display: none;
+}
+@media (min-width: 1025px) {
+  .app-rail-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.5rem;
+    background: transparent;
+    border: 2px solid var(--garis-tegas-inv);
+    color: var(--kanvas); /* 16,66:1 */
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--dur-cepat) var(--ease), background-color var(--dur-cepat) var(--ease);
+  }
+  .app-rail-btn:hover {
+    border-color: var(--bara);
+    background: rgba(247, 243, 236, 0.1);
+  }
+  html[data-app-rail='1'] .app-rail-btn span {
+    display: none;
+  }
+}
+.app-rail-ikon {
+  width: 18px;
+  height: 18px;
+  transition: transform var(--dur) var(--ease);
+}
+html[data-app-rail='1'] .app-rail-ikon {
+  transform: rotate(180deg);
+}
+
+/* ----------------------------------------------------------------- 3. topbar */
+
+.app-top {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--app-top);
+  padding: 0.4rem var(--gutter);
+  background: var(--putih);
+  border-bottom: 1px solid var(--garis);
+}
+.app-top-spacer {
+  flex: 1 1 auto;
+}
+.app-burger {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 44px; /* R47 */
+  height: 44px;
+  flex: 0 0 auto;
+  background: transparent;
+  border: 2px solid var(--garis-tegas);
+  cursor: pointer;
+}
+.app-burger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--tinta);
+}
+@media (min-width: 1025px) {
+  .app-burger {
+    display: none;
+  }
+}
+/* mobile only lockup, so exactly ONE brand mark is on screen at any width (R52) */
+.app-top-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* R47: it is a LINK in the mobile topbar, so it is a tap target and it gets the full 44px.
+     Measured at 154x33 before this line. */
+  min-height: 44px;
+  padding-block: 0.25rem;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+.app-top-brand .app-mark {
+  width: 30px;
+  height: 30px;
+  font-size: 0.95rem;
+}
+.app-top-brand .app-word {
+  color: var(--tinta);
+  font-size: 1rem;
+}
+.app-top-brand .app-kategori {
+  color: var(--tinta-lembut); /* 8,36:1 on --putih */
+}
+@media (min-width: 1025px) {
+  .app-top-brand {
+    display: none;
+  }
+}
+
+.app-top-tanggal {
+  display: none;
+  font-size: 0.8125rem;
+  color: var(--tinta-lembut);
+}
+@media (min-width: 768px) {
+  .app-top-tanggal {
+    display: block;
+  }
+}
+
+.app-sesi {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.app-sesi .app-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 0.75rem;
+}
+.app-sesi-nama {
+  display: none;
+}
+@media (min-width: 560px) {
+  .app-sesi-nama {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    text-align: right;
+  }
+  .app-sesi-nama b {
+    display: block;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+  }
+  .app-sesi-nama span {
+    display: block;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    color: var(--tinta-lembut);
+  }
+}
+
+/* ----------------------------------------------------------------- 4. drawer, R53
+
+   PORTALLED to document.body and UNMOUNTED when closed. Both matter. A drawer rendered inside a
+   header that carries backdrop-filter collapses to the header's own height because the header
+   becomes its containing block, and a drawer that is merely faded out still contributes its box
+   to document.documentElement.scrollWidth (R57). Neither can happen here. */
+
+.app-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(21, 16, 42, 0.62);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+.app-scrim.in {
+  opacity: 1;
+}
+
+.app-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+  width: min(300px, 86vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--senja-pekat);
+  color: var(--kanvas);
+  border-right: 1px solid var(--garis-inv);
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform var(--dur-lambat) var(--ease);
+}
+.app-drawer.in {
+  transform: none;
+}
+.app-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: var(--app-top);
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--garis-inv);
+}
+.app-drawer-judul {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kabut);
+}
+.app-tutup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  background: transparent;
+  border: 2px solid var(--garis-tegas-inv);
+  color: var(--kanvas);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.app-tutup:hover {
+  border-color: var(--bara);
+}
+
+/* ----------------------------------------------------------------- 5. page frame */
+
+.app-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.app-page {
+  flex: 1 1 auto;
+  padding: 1.25rem var(--gutter) 3rem;
+}
+
+.app-head {
+  margin-bottom: 1rem;
+}
+/* R50: page title and its one line summary are blocks with a gap. */
+.app-judul {
+  display: block;
+  margin: 0;
+  font-size: var(--t-h2);
+  line-height: 1.15;
+}
+.app-sub {
+  display: block;
+  margin-top: 0.35rem;
+  max-width: 68ch;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--tinta-lembut); /* 6,75:1 on --kanvas-2 */
+}
+
+/* App standard 2: the primary actions sit on the LEFT, level with the title, never exiled to a
+   top right corner. Order on every page is judul, aksi utama, filter, lalu datanya. */
+.app-aksi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.9rem;
+}
+
+.app-filter {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.9rem;
+  background: var(--putih);
+  border: 1px solid var(--garis);
+}
+@media (min-width: 640px) {
+  .app-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .app-filter {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.app-viewbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.app-hitung {
+  font-size: 0.8125rem;
+  color: var(--tinta-lembut);
+}
+
+/* the view switcher, one segmented control in the SAME place on every page */
+.app-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 2px solid var(--garis-tegas);
+  background: var(--putih);
+}
+.app-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: 0;
+  color: var(--tinta); /* 12,3:1 on --putih */
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-cepat) var(--ease), color var(--dur-cepat) var(--ease);
+}
+.app-view-btn + .app-view-btn {
+  border-left: 2px solid var(--garis-tegas);
+}
+.app-view-btn:hover {
+  background: var(--kanvas-2);
+}
+.app-view-btn[aria-pressed='true'] {
+  background: var(--lembayung);
+  color: var(--putih); /* 10,25:1 */
+}
+.app-view-ikon {
+  width: 16px;
+  height: 16px;
+}
+
+/* ----------------------------------------------------------------- 6. stat tiles
+
+   A wrapping flex ROW, not a grid. Deliberate: four compact tiles read better two by two at
+   375px than as one more thing to swipe, and R48 governs stacked CARD sections rather than a
+   dense KPI strip. Each tile is a single short block, never a card with its own media. */
+.app-stat-row {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.app-stat {
+  flex: 1 1 150px;
+  min-width: 0;
+  padding: 0.75rem 0.9rem;
+  background: var(--putih);
+  border: 1px solid var(--garis);
+  border-top: 3px solid var(--lembayung);
+}
+.app-stat-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tinta-lembut); /* 8,36:1 on --putih */
+}
+.app-stat-nilai {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.app-stat-ket {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--tinta-lembut);
+}
+
+/* ----------------------------------------------------------------- 7. status badge
+
+   Every one of these is a FILL carrying its own label colour, and every pair is measured:
+     permintaan   --bara-tua  + --putih   6,04:1
+     dikonfirmasi --lembayung + --putih  10,25:1
+     menginap     --pinus     + --putih   6,44:1
+     selesai      --batu      + --tinta  11,25:1
+     batal        --bahaya    + --putih   7,47:1
+   Because each carries its own ground, the badge is legible on the light workspace AND on the
+   dark sidebar without a second variant. That is the point of using fills here. */
+.app-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  white-space: nowrap;
+  color: var(--putih);
+  background: var(--tinta-lembut);
+}
+.app-badge-permintaan {
+  background: var(--bara-tua);
+}
+.app-badge-dikonfirmasi {
+  background: var(--lembayung);
+}
+.app-badge-menginap {
+  background: var(--pinus);
+}
+.app-badge-selesai {
+  background: var(--batu);
+  color: var(--tinta);
+}
+.app-badge-batal {
+  background: var(--bahaya);
+}
+
+.app-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.45rem;
+  background: var(--kanvas-2);
+  border: 1px solid var(--garis-tegas);
+  color: var(--tinta);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------------- 8. table view
+
+   The wrapper owns BOTH scroll axes, which is what makes a sticky header actually work: a box
+   with overflow-x auto computes overflow-y to auto as well, so a thead sticking to the viewport
+   would never trigger inside it. Giving the box its own max-height turns that into a feature,
+   the header stays put while the rows scroll, and the page itself never scrolls sideways (R19). */
+.app-table-wrap {
+  max-height: 70vh;
+  overflow: auto;
+  background: var(--putih);
+  border: 1px solid var(--garis);
+}
+.app-table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+@media (min-width: 1280px) {
+  .app-table {
+    min-width: 0;
+  }
+}
+.app-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--kanvas-2);
+  border-bottom: 2px solid var(--senja);
+  padding: 0;
+  text-align: left;
+  white-space: nowrap;
+}
+.app-th-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 0;
+  color: var(--tinta); /* 11,25:1 on --kanvas-2 */
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+.app-th-btn:hover {
+  background: var(--batu);
+}
+.app-th-plain {
+  display: block;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tinta);
+}
+.app-sort {
+  font-size: 0.7rem;
+  color: var(--lembayung-tua); /* 11,40:1 on kanvas, 8,9:1 on --kanvas-2 */
+}
+.app-table tbody tr {
+  border-bottom: 1px solid var(--garis);
+}
+.app-table tbody tr:hover {
+  background: var(--kanvas);
+}
+.app-table tbody tr.is-picked {
+  background: #ece5f7;
+}
+.app-table td {
+  padding: 0.6rem 0.75rem;
+  vertical-align: top;
+}
+.app-td-kode {
+  font-weight: 700;
+  white-space: nowrap;
+}
+/* R50: the cell title and its secondary line are separate blocks with a gap. A table cell is
+   exactly where two inline nodes glue into `Dome SenjaLMB-DS-2H`. */
+.app-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.app-cell b {
+  display: block;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.app-cell span {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--tinta-lembut);
+}
+.app-col-opt {
+  display: none;
+}
+@media (min-width: 900px) {
+  .app-col-opt {
+    display: table-cell;
+  }
+}
+
+/* custom checkbox, so R10 holds and the control is measurable rather than OS drawn */
+.app-check {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  background: var(--putih);
+  border: 2px solid var(--garis-tegas); /* 3,05:1 against --putih, a UI boundary needs 3:1 */
+  cursor: pointer;
+}
+.app-check:checked {
+  background: var(--lembayung);
+  border-color: var(--lembayung);
+}
+.app-check:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 6px;
+  height: 12px;
+  border: solid var(--putih); /* 10,25:1 on --lembayung */
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+/* the 44px target lives on the wrapping label, the box itself stays 22px */
+.app-check-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+}
+
+.app-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--senja);
+  color: var(--kanvas); /* 15,3:1 on --senja */
+  border-left: 4px solid var(--bara);
+}
+.app-bulk-teks {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------------------- 9. calendar view
+
+   A real <table>. That is not decoration: a month grid IS tabular data, the weekday headers are
+   real column headers for a screen reader, and it keeps the R48 sweep honest without asking for
+   an exemption, because thead, tbody and tr are already understood shapes. */
+.app-cal-wrap {
+  overflow-x: auto;
+  background: var(--putih);
+  border: 1px solid var(--garis);
+}
+.app-cal {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.app-cal caption {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  color: var(--tinta-lembut);
+}
+.app-cal th {
+  padding: 0.4rem 0.25rem;
+  background: var(--kanvas-2);
+  border-bottom: 2px solid var(--senja);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tinta);
+}
+.app-cal td {
+  padding: 0;
+  border: 1px solid var(--garis);
+  vertical-align: top;
+}
+.app-cal-day {
+  display: flex;
+  flex-direction: column;
+  /* `align-items: stretch` is the initial value for a flex container and would normally not be
+     worth writing. It IS worth writing here, because this flex container is a <button>, and the
+     browser's own button styling sets `align-items: center`. Under `center` a flex item sizes to
+     its content, and the occupancy bar below has no content: it measured `width: 0` and painted
+     nothing, on every cell of every month. Every programmatic sweep passed, because a zero width
+     element has no contrast to fail and no overflow to report. Only reading a screenshot found
+     it, which is R51 in one line. */
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  min-height: 104px;
+  padding: 0.4rem;
+  background: var(--putih);
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-cepat) var(--ease);
+}
+.app-cal-day:hover {
+  background: var(--kanvas);
+}
+.app-cal-day[aria-pressed='true'] {
+  background: #ece5f7;
+  box-shadow: inset 0 0 0 3px var(--lembayung);
+}
+.app-cal-kosong {
+  background: var(--kanvas-2);
+  min-height: 104px;
+}
+.app-cal-nomor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--tinta);
+}
+.app-cal-day.is-weekend .app-cal-nomor {
+  color: var(--tanah); /* 6,56:1 on --putih */
+}
+.app-cal-day.is-today .app-cal-nomor::after {
+  content: 'hari ini';
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--putih);
+  background: var(--lembayung);
+  padding: 1px 4px;
+}
+.app-cal-bar {
+  height: 6px;
+  background: var(--batu); /* track */
+}
+.app-cal-bar span {
+  display: block;
+  height: 100%;
+  background: var(--pinus); /* 4,22:1 against the track, a UI boundary needs 3:1 */
+}
+.app-cal-bar.is-penuh span {
+  background: var(--tanah);
+}
+.app-cal-angka {
+  display: block;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--tinta-lembut); /* 8,36:1 on --putih */
+}
+.app-cal-tanda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.app-cal-masuk,
+.app-cal-keluar {
+  display: inline-block;
+  padding: 0 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--putih);
+  background: var(--pinus); /* 6,44:1 */
+}
+.app-cal-keluar {
+  background: var(--bara-tua); /* 6,04:1 */
+}
+
+.app-cal-layout {
+  display: grid;
+  gap: 1.25rem;
+}
+/* `min-width: 0` is load bearing and is NOT redundant with the scroll box above it. A grid item
+   defaults to `min-width: auto`, which is its CONTENT based minimum, so the calendar's own
+   `min-width: 620px` propagated straight up through the wrapper and out of the page: measured
+   at 375px before this line, `scrollWidth 642` against `innerWidth 375` on /app/, an R19
+   failure invisible at every other breakpoint. The scroll box only contains the table once its
+   grid ancestor is allowed to be narrower than its content. */
+.app-cal-layout > * {
+  min-width: 0;
+}
+@media (min-width: 1100px) {
+  .app-cal-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+}
+
+/* Below 560px seven columns cannot carry a sentence each, so the words drop out and the cell
+   keeps the number, the occupancy bar and the two counts. Nothing is lost to a screen reader:
+   the day button's aria-label spells out the same three figures in full. */
+@media (max-width: 560px) {
+  .app-cal {
+    min-width: 0;
+  }
+  .app-cal-angka,
+  .app-cal-kata {
+    display: none;
+  }
+  .app-cal-day,
+  .app-cal-kosong {
+    min-height: 92px;
+  }
+  .app-cal-day {
+    padding: 0.3rem 0.2rem;
+  }
+  .app-cal th {
+    font-size: 0.62rem;
+    padding-inline: 0;
+  }
+}
+
+/* ----------------------------------------------------------------- 10. record lists
+
+   Plain block lists. A reservation list, a kanban column and a guest's stay history are
+   inherently vertical records, not the marketing card sections R48 governs, and each row here
+   is one line of data rather than a photo card. The browse oriented CARD view below IS a card
+   section, so that one is a real .snap-row carousel at mobile widths. */
+.app-list {
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.app-list > li + li {
+  margin-top: 0.5rem;
+}
+
+.app-rec {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  background: var(--putih);
+  border: 1px solid var(--garis);
+  border-left: 4px solid var(--lembayung);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-cepat) var(--ease), transform var(--dur-cepat) var(--ease);
+}
+.app-rec:hover {
+  border-color: var(--senja);
+  border-left-color: var(--lembayung);
+  transform: translateX(2px);
+}
+.app-rec-teks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.app-rec-judul {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.app-rec-ket {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--tinta-lembut);
+}
+
+.app-side-box {
+  padding: 0.9rem;
+  background: var(--putih);
+  border: 1px solid var(--garis);
+}
+.app-side-box + .app-side-box {
+  margin-top: 1rem;
+}
+.app-side-judul {
+  display: block;
+  margin: 0 0 0.15rem;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.app-side-ket {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--tinta-lembut);
+}
+
+/* ----------------------------------------------------------------- 11. card view */
+
+.app-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: 100%;
+  padding: 0.9rem;
+  background: var(--putih);
+  border: 1px solid var(--garis);
+  border-top: 3px solid var(--lembayung);
+  text-align: left;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.app-card > .app-mini {
+  margin-top: auto;
+  align-self: flex-start;
+}
+.app-card:hover {
+  border-color: var(--senja);
+  border-top-color: var(--lembayung);
+  transform: translateY(-2px);
+}
+.app-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.app-card-judul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.app-card-nama {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.app-card-kode {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--tinta-lembut);
+}
+.app-dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.2rem 0.6rem;
+  margin: 0;
+  font-size: 0.8125rem;
+}
+.app-dl dt {
+  color: var(--tinta-lembut);
+}
+.app-dl dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------------------- 12. kanban
+
+   The board is a flex ROW that becomes a snap carousel below 1025px, which is the only sane
+   mobile shape for a board. Columns are block lists, see section 10. */
+.app-kanban {
+  display: flex;
+  flex-flow: row nowrap;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.75rem;
+  margin-inline: calc(var(--gutter) * -1);
+  padding-inline: var(--gutter);
+}
+@media (min-width: 1025px) {
+  .app-kanban {
+    scroll-snap-type: none;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+.app-kan-col {
+  flex: 0 0 82vw;
+  scroll-snap-align: start;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--kanvas);
+  border: 1px solid var(--garis);
+  transition: background-color var(--dur-cepat) var(--ease), border-color var(--dur-cepat) var(--ease);
+}
+@media (min-width: 560px) {
+  .app-kan-col {
+    flex-basis: 58vw;
+  }
+}
+@media (min-width: 1025px) {
+  .app-kan-col {
+    flex: 1 1 0;
+  }
+}
+.app-kan-col.is-target {
+  background: #ece5f7;
+  border-color: var(--lembayung);
+}
+.app-kan-head {
+  padding: 0.6rem 0.7rem;
+  border-bottom: 2px solid var(--senja);
+  background: var(--putih);
+}
+.app-kan-nama {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+/* R50: the column title and its explanation are separate blocks with a gap. */
+.app-kan-ket {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--tinta-lembut);
+}
+.app-kan-jumlah {
+  display: inline-block;
+  padding: 0 6px;
+  background: var(--senja);
+  color: var(--kanvas); /* 15,3:1 */
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.app-kan-body {
+  flex: 1 1 auto;
+  padding: 0.6rem;
+  min-height: 120px;
+}
+.app-kan-card {
+  padding: 0.6rem;
+  background: var(--putih);
+  border: 1px solid var(--garis);
+  border-left: 4px solid var(--lembayung);
+  cursor: grab;
+}
+.app-kan-card.is-drag {
+  opacity: 0.5;
+}
+.app-kan-card-atas {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+.app-kan-pindah {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--garis);
+}
+.app-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 32px;
+  padding: 0.2rem 0.5rem;
+  background: var(--putih);
+  border: 2px solid var(--garis-tegas);
+  color: var(--tinta);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.app-mini:hover:not(:disabled) {
+  border-color: var(--lembayung);
+  background: var(--kanvas-2);
+}
+/* R20(d): a disabled control is exempt from the contrast sweep, WCAG 1.4.3 inactive component. */
+.app-mini:disabled {
+  color: var(--tinta-lembut);
+  background: var(--batu);
+  border-color: var(--batu);
+  cursor: not-allowed;
+}
+
+/* ----------------------------------------------------------------- 13. empty and loading
+
+   App standard 4: an empty table with nothing in it is a bug, not a design, and a full screen
+   spinner that makes the layout jump is worse than a skeleton. */
+.app-kosong {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 2rem 1.25rem;
+  background: var(--putih);
+  border: 1px dashed var(--garis-tegas);
+}
+.app-kosong-ikon {
+  width: 40px;
+  height: 40px;
+  color: var(--lembayung);
+}
+.app-kosong-judul {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.app-kosong-ket {
+  display: block;
+  max-width: 52ch;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--tinta-lembut);
+}
+
+.app-skeleton {
+  display: block;
+  height: 14px;
+  background: linear-gradient(90deg, var(--batu) 0%, var(--kanvas-2) 50%, var(--batu) 100%);
+  background-size: 200% 100%;
+  animation: appShimmer 1.2s linear infinite;
+}
+.app-skeleton + .app-skeleton {
+  margin-top: 0.5rem;
+}
+@keyframes appShimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ----------------------------------------------------------------- 14. record drawer, R53
+
+   Portalled to document.body and unmounted when closed, for the same two reasons as the nav
+   drawer in section 4. Verified by measuring getBoundingClientRect, never by reading this CSS,
+   because the CSS is identical in the broken and the correct case. */
+.app-rec-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  width: min(460px, 92vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--kanvas);
+  border-left: 2px solid var(--senja);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform var(--dur-lambat) var(--ease);
+}
+.app-rec-panel.in {
+  transform: none;
+}
+.app-rec-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  background: var(--senja);
+  color: var(--kanvas);
+  border-bottom: 1px solid var(--garis-inv);
+}
+.app-rec-head .app-tutup {
+  color: var(--kanvas);
+}
+.app-rec-body {
+  padding: 1rem 0.9rem 2rem;
+}
+.app-rec-baris {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--garis);
+  font-size: 0.875rem;
+}
+.app-rec-baris dt {
+  color: var(--tinta-lembut); /* 8,36:1 on --kanvas */
+}
+.app-rec-baris dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+.app-rec-blok {
+  margin-top: 1.25rem;
+}
+.app-rec-blok h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+/* payment progress, a UI component so its boundary needs 3:1 not 4,5:1 */
+.app-bayar {
+  height: 10px;
+  background: var(--batu);
+  border: 1px solid var(--garis-tegas);
+}
+.app-bayar span {
+  display: block;
+  height: 100%;
+  background: var(--pinus);
+}
+
+/* status timeline in the guest portal */
+.app-langkah {
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.app-langkah > li {
+  display: flex;
+  gap: 0.6rem;
+  padding-bottom: 0.9rem;
+}
+.app-langkah-tanda {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  background: var(--batu);
+  border: 2px solid var(--garis-tegas);
+}
+.app-langkah > li.is-done .app-langkah-tanda {
+  background: var(--pinus);
+  border-color: var(--pinus);
+}
+.app-langkah-teks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.app-langkah-teks b {
+  display: block;
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+.app-langkah-teks span {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--tinta-lembut);
+}
+
+/* ----------------------------------------------------------------- 15. login and portal */
+
+.app-masuk {
+  display: grid;
+  gap: 1.5rem;
+  align-items: center;
+  min-height: 60vh;
+  padding: 1.5rem;
+  background: var(--senja);
+  color: var(--kanvas);
+  border-left: 4px solid var(--bara);
+}
+@media (min-width: 1025px) {
+  .app-masuk {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
+    gap: 3rem;
+    padding-inline: calc(var(--gutter) * 2);
+  }
+}
+.app-masuk h1 {
+  color: var(--kanvas);
+}
+.app-masuk-kartu {
+  padding: 1.25rem;
+  background: var(--putih);
+  color: var(--tinta);
+  border: 2px solid var(--senja-pekat);
+}
+.app-kredensial {
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  background: var(--kanvas-2);
+  border-left: 4px solid var(--bara-tua);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+.app-kredensial b {
+  display: block;
+}
+.app-kredensial code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875rem;
+}
+.app-galat {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: #fbe9e7;
+  border-left: 4px solid var(--bahaya);
+  color: var(--bahaya); /* 6,3:1 on that tint */
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.app-portal-hero {
+  padding: 1.25rem;
+  background: var(--senja);
+  color: var(--kanvas);
+  border-left: 4px solid var(--bara);
+}
+.app-portal-hero .app-judul,
+.app-portal-hero h2 {
+  color: var(--kanvas);
+}
+.app-portal-hero .app-sub {
+  color: var(--kabut); /* 8,32:1 on --senja */
+}
+.app-tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 2px solid var(--garis-tegas);
+  background: var(--putih);
+  margin-bottom: 1rem;
+}
+
+/* ----------------------------------------------------------------- 16. dark ground text
+
+   R20 / DESIGN.md 3.4 applied to the panel's own classes. Three surfaces here are dark grounds
+   sitting inside a light workspace: the sidebar, the login screen and the portal hero. Every
+   text class that appears on BOTH grounds needs the inverted value on the dark one, and this is
+   that pair, written once.
+
+   The login screen is the case that proves why these are scoped to a class and not to a
+   section. `/app/masuk/` is a dark section containing a WHITE card, and both this file and
+   site.css hang real colour rules off `.on-dark`. With the class on the SECTION, site.css's own
+   `.on-dark .field-label { color: var(--kanvas) }` reached inside the white card and the sweep
+   measured 1,11:1 on rgb(255,255,255). The fix is structural, in MasukDemo.tsx: `on-dark`
+   describes the dark COLUMN, not the section that happens to contain a light box. A more
+   specific override would also have worked and would have been the wrong answer, because the
+   next light box nested in a dark region would reintroduce the same bug. */
+.on-dark .app-judul,
+.on-dark h2,
+.on-dark h3 {
+  color: var(--kanvas); /* 16,66:1 on --senja-pekat, 15,3:1 on --senja */
+}
+.on-dark .app-sub,
+.on-dark .app-kecil,
+.on-dark .app-hitung {
+  color: var(--kabut); /* 8,32:1 on --senja */
+}
+
+/* The light card states its own ground explicitly rather than inheriting whatever the section
+   above it happens to be. */
+.app-masuk-kartu h2,
+.app-masuk-kartu h3 {
+  color: var(--tinta); /* 15,4:1 on --putih */
+}
+.app-masuk-kartu .app-kecil {
+  color: var(--tinta-lembut); /* 8,36:1 on --putih */
+}
+
+/* ----------------------------------------------------------------- 17. utilities */
+
+.app-baris {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.app-kecil {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--tinta-lembut);
+}
+.app-nowrap {
+  white-space: nowrap;
+}
+.app-grid-2 {
+  display: grid;
+  gap: 1rem;
+}
+@media (min-width: 900px) {
+  .app-grid-2 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-page,
+  .app-skeleton {
+    animation: none;
+  }
+  .app-drawer,
+  .app-rec-panel,
+  .app-scrim {
+    transition: none;
+  }
+}

@@ -11,6 +11,7 @@ import ClientEffects from '@/components/ClientEffects';
 import WelcomeModal from '@/components/WelcomeModal';
 import FloatingCta from '@/components/FloatingCta';
 import { GtmHead, GtmNoScript, MetaPixel } from '@/components/Analytics';
+import AppChromeGate from '@/components/app/AppChromeGate';
 
 /* DESIGN.md section 4. Newsreader is the display face, a warm editorial serif that reads as a
    place with a story rather than a resort chain. Figtree carries the UI, body and every numeral,
@@ -94,19 +95,30 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           Lewati ke konten utama
         </a>
 
-        <AnnouncementBar />
-        <Header />
+        {/* Stage 4 (Webapp Architect, HIM-319) added AppChromeGate. It renders its children on
+            every marketing route and NOTHING on `/app`, where the reservation panel supplies its
+            own left sidebar shell. It is a fragment, so the DOM on a marketing page is byte for
+            byte what it was before. A CSS `display: none` was rejected: WelcomeModal locks
+            body scroll and traps focus while open, so hiding it would leave the panel
+            unscrollable with the keyboard stuck in an invisible dialog. */}
+        <AppChromeGate>
+          <AnnouncementBar />
+          <Header />
+        </AppChromeGate>
         {/* R46: PageShell keys the fade and rise on the pathname, so every route change animates */}
         <PageShell>{children}</PageShell>
-        <Footer />
 
         {/* R53: every full viewport overlay lives OUT here, as a sibling of <header>. The three
             below additionally portal themselves to document.body. Nesting any of them inside the
             blurred header makes the header their containing block and collapses them to a 76px
             strip across the topbar. */}
-        <WhatsAppFloat />
-        <FloatingCta />
-        <WelcomeModal />
+        <AppChromeGate>
+          <Footer />
+          <WhatsAppFloat />
+          <FloatingCta />
+          <WelcomeModal />
+        </AppChromeGate>
+        {/* NOT gated: the panel wants the `.js` class and the R24 reveal observers too. */}
         <ClientEffects />
       </body>
     </html>

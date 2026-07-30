@@ -40,7 +40,14 @@ function discoverRoutes(root) {
   walk(root);
   return [...routes].sort();
 }
-const PAGES = discoverRoutes(ROOT);
+/* QA_ROUTES=/app/ narrows the sweep to routes under one prefix, the same convenience QA_ONLY
+   gives for blocks and with the same warning: it is for ITERATING on one area, and a deploy
+   gate needs the unfiltered run. Added at Stage 4 so the /app panel could be swept repeatedly
+   without re-walking 35 routes each time. Unset by default, so nothing changes for anyone who
+   does not ask for it. */
+const ONLY_ROUTES = process.env.QA_ROUTES ? process.env.QA_ROUTES.split(",").map((s) => s.trim()) : null;
+const PAGES = discoverRoutes(ROOT).filter((r) => !ONLY_ROUTES || ONLY_ROUTES.some((p) => r.startsWith(p)));
+if (ONLY_ROUTES) console.log("QA_ROUTES:", ONLY_ROUTES.join(" "));
 console.log(`discovered ${PAGES.length} routes:`, PAGES.join(" "));
 const SIZES = [[375,800],[480,900],[768,1000],[1025,900],[1440,900]];
 
@@ -552,15 +559,15 @@ if (run("r59")) {
 
   // (a) every linked href must resolve to a real file via the same static-file logic the
   // dev server above uses, not just "the server returns something".
-  // Stage 3 owns the marketing site; /app is Webapp Architect's, Stage 4. The marketing site
-  // links to it deliberately (R8 demo entry points, declared in one place as APP_ROUTES), so those
-  // hrefs are EXPECTED to be unresolved until Stage 4 ships. They are reported as pending rather
-  // than as broken, and Stage 8 must see them resolve before deploy.
+  // Stage 4 (Webapp Architect, HIM-319) SHIPPED /app, so the temporary bypass that reported
+  // `/app/*` hrefs as "pending on Stage 4" instead of resolving them is gone. Those links are
+  // now crawled and asserted exactly like every other internal link, which is what Stage 8's
+  // deploy gate needs. `pending` stays declared so the reporting line below still compiles and
+  // prints nothing once the list is empty.
   const pending = [];
   for (const href of allHrefs) {
     const clean = href.split("#")[0].split("?")[0];
     if (!clean || clean === "/") continue;
-    if (clean.startsWith("/app/")) { pending.push(clean); continue; }
     let f = join(ROOT, clean);
     if (existsSync(f) && statSync(f).isDirectory()) f = join(f, "index.html");
     else if (!existsSync(f) && existsSync(f + ".html")) f = f + ".html";
