@@ -199,8 +199,21 @@ Tutorial for Fahima. Bahasa Indonesia, per R23.
 
 ## 9. Stage 2 checklist for Asset Forge
 
-- [ ] Decide on the section 1 vertical notch, and state the decision here.
-- [ ] Finalise the two prompt blocks in section 5, or confirm the drafts as written.
-- [ ] Confirm the wordmark serif direction reads correctly against Newsreader 500, the site display face.
-- [ ] Confirm both variants are listed as rows in the combined `MEDIA.md` that Stage 3 emits, so they travel in the single bundle per R25.
-- [ ] Do **not** generate pixels. R63.
+- [x] **Decide on the section 1 vertical notch: dropped.** The mark already has to survive as four thin stacked bars at a 16px favicon, which is the tightest constraint in the whole spec. An off-centre notch cut through those bars adds a fine detail exactly where there is no room for one; at 16px it is far more likely to read as a broken or dirty pixel than as "the sun dropping behind the ridge." Section 1 itself says legibility at 16px wins, so it wins. The section 5 draft prompts never described a notch to begin with, so no prompt text changes as a result of this decision, and the section 6 favicon crop should treat the bar gaps, not a notch, as the thing to widen if 16px still merges.
+- [x] **Finalise the two prompt blocks in section 5: confirmed as written, no edits.** Checked both against section 2 (colour pairs per ground, transparent background, no plate) and section 3 (exact hex values, 1:1 2048px, square ends, one linear gradient, Newsreader-weight serif). Both prompts hit every constraint, spell out the ground-appropriate gradient direction and wordmark ink correctly (primary `#1C1830` ink, knockout `#F7F3EC` canvas), carry the R62 single-string discipline (`Lembayung` only, no bracketed tokens), and their NEGATIVE blocks already exclude the rejected tent/pine/mountain/circular-badge shapes from section 1. Confirmed as the paste-ready text for Fahima; no notch to add or remove.
+- [x] **Wordmark serif direction confirmed against Newsreader 500.** `DESIGN.md` section 4 locks Newsreader as the display face at weights 400/500/600 (500 for most headings) and explicitly deliberately-not-Fraunces, deliberately-not-single-weight. The section 5 prompts ask for "a warm editorial serif of medium weight with generous letter spacing," which is Newsreader 500 in words a text-to-image model can act on without naming a font family it cannot actually load. No change needed.
+- [x] Both variants registered as rows for the combined `MEDIA.md` — see section 10 below, added for Site Architect to fold in at Stage 3.
+- [x] Do **not** generate pixels. R63. Confirmed: no image tool was called, no pixel produced this stage.
+
+---
+
+## 10. MEDIA.md manifest rows (for Site Architect, Stage 3)
+
+Fold these two rows in at the top of the combined manifest, ahead of the catalog rows, so the logo pair is unmistakably part of the one bundle per R25.
+
+| # | Subject | Ratio | Model | Path | Prompt source |
+| --- | --- | --- | --- | --- | --- |
+| L01 | Lembayung primary lockup, horizon mark plus wordmark, light-ground gradient (amber to violet), transparent | 1:1 | Nano Banana | `public/img/logo.png` | `LOGO.md` section 5.1, verbatim |
+| L02 | Lembayung inverted knockout lockup, horizon mark plus wordmark, dark-ground brightened gradient, transparent | 1:1 | Nano Banana | `public/img/logo-inverted.png` | `LOGO.md` section 5.2, verbatim |
+
+Neither row takes the shared PHOTO DNA / NEGATIVE blocks from `DESIGN.md` section 7.2/7.3 — those are for the photographic catalog images. The logo prompts carry their own flat-vector NEGATIVE block already, which forbids the PHOTO DNA aesthetic (no photo, no photorealism, no film grain) as well as the rejected shapes. Do not append the shared photographic blocks to L01/L02.
