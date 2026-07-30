@@ -1,0 +1,13 @@
+{
+  "name": "Lembayung, Glamping & Kabin Dataran Tinggi",
+  "short_name": "Lembayung",
+  "description": "Glamping dan kabin kayu di lereng hutan pinus Cikole, Lembang. Enam tipe unit di lima teras.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F3EC",
+  "theme_color": "#221A3A",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

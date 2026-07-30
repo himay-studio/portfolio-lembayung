@@ -4,12 +4,34 @@
   "version": "0.1.0",
   "description": "Lembayung, highland glamping and cabin resort (Lembang, Bandung Utara). Portfolio demo build by Himay Studio.",
   "scripts": {
+    "dev": "next dev",
+    "prebuild": "node scripts/gen-media.mjs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
     "contrast": "node tools/contrast.mjs",
     "validate:content": "node tools/validate-content.mjs",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run contrast && npm run validate:content"
+    "check": "npm run typecheck && npm run contrast && npm run validate:content",
+    "qa": "node scripts/qa-check.mjs ./out",
+    "qa:shots": "node scripts/qa-shots.mjs ./out",
+    "deploy": "rm -rf out .next && npm run build && npx wrangler pages deploy out --project-name=himaystudio-portfolio-lembayung --branch=main"
+  },
+  "dependencies": {
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "playwright": "^1.62.0",
+    "puppeteer-core": "^25.4.0",
+    "tailwindcss": "^4",
     "typescript": "^5.6.3"
   }
 }

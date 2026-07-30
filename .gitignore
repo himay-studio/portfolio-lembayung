@@ -4,3 +4,8 @@ out/
 *.tsbuildinfo
 .DS_Store
 .env*.local
+
+# QA artefacts, not build output
+.shots/
+.validate-tmp/
+commitmsg.txt

@@ -1,0 +1,2601 @@
+/* ==========================================================================================
+   Lembayung design system.
+
+   Implements DESIGN.md verbatim. The token block in section 1 below is copied from DESIGN.md
+   section 2 without alteration; `node tools/contrast.mjs` proves every pair in it and exits non
+   zero on a regression, so do not edit a hex value here without re running that checker.
+
+   Rule anchors that live in CSS rather than in a component, so they are findable:
+     R10  zero radius everywhere, one oval (.wa-float)
+     R16.1 mega panel geometry, anchor plus viewport clamp
+     R20  every dual ground class ships an -inv variant, DESIGN.md 3.4
+     R34  the revealed state out ranks every hide rule by specificity, 0,3,0
+     R46  animated route transition
+     R48  .snap-row, the ONE carousel used by every 4+ item section
+     R57  a closed absolute panel has ZERO layout footprint, so it cannot inflate scrollWidth
+   ========================================================================================== */
+
+/* ---------------------------------------------------------------- 1. tokens, DESIGN.md 2 */
+
+:root {
+  /* ---- Dusk. The dark ground. Rationed: hero, footer, max two bands per page. ---- */
+  --senja:              #221A3A;  /* primary dark surface */
+  --senja-pekat:        #15102A;  /* footer, deepest surface */
+  --lembayung:          #4A3573;  /* signature violet: filled secondary button, active state */
+  --lembayung-tua:      #3A2A5C;  /* violet as TEXT or LINK on LIGHT grounds; violet button hover */
+  --lembayung-terang:   #C9B8E8;  /* violet as TEXT or LINK on DARK grounds  [inverted pair] */
+
+  /* ---- Fire and earth. Accents only, never a large surface. ---- */
+  --bara:               #F0A94C;  /* amber. DARK GROUND ONLY. eyebrow, icon, accent rule */
+  --bara-tua:           #96500B;  /* amber. LIGHT GROUND ONLY.                [inverted pair] */
+  --tanah:              #9C4221;  /* terracotta. FILL ONLY, always carries white text */
+
+  /* ---- Pine. This is ALSO the sales CTA (R5), by construction. ---- */
+  --pinus:              #1E6B45;  /* sales CTA fill; green text and icon on LIGHT ground */
+  --pinus-tua:          #155134;  /* CTA hover and active */
+  --pinus-terang:       #4FAE7C;  /* green text on DARK ground              [inverted pair] */
+
+  /* ---- Canvas and stone. The light ground, and the site default. ---- */
+  --kanvas:             #F7F3EC;  /* page canvas */
+  --kanvas-2:           #EDE6DA;  /* alternating band, card ground on canvas */
+  --putih:              #FFFFFF;  /* cards, inputs, calendar cells */
+  --batu:               #D8D0C4;  /* stone chip, muted fill, disabled track */
+  --kabut:              #BDB4D2;  /* mist. secondary TEXT on DARK ground     [inverted pair] */
+
+  /* ---- Ink. ---- */
+  --tinta:              #1C1830;  /* primary text on light grounds */
+  --tinta-lembut:       #4E4866;  /* secondary text on light grounds         [inverted pair] */
+
+  /* ---- Lines, focus, state. Each has an explicit dark ground counterpart. ---- */
+  --garis:              #E2DACC;                    /* decorative hairline, LIGHT. never a control border */
+  --garis-inv:          rgba(247, 243, 236, 0.22);  /* decorative hairline, DARK */
+  --garis-tegas:        #8A8098;                    /* input and control border, LIGHT */
+  --garis-tegas-inv:    rgba(247, 243, 236, 0.62);  /* input and control border, DARK */
+  --fokus:              #4A3573;                    /* focus ring, LIGHT */
+  --fokus-inv:          #F0A94C;                    /* focus ring, DARK */
+  --bahaya:             #A32318;                    /* form error, LIGHT */
+  --bahaya-terang:      #FF9182;                    /* form error, DARK */
+
+  /* ---- Hero scrim. R2: the 8s video must stay clearly visible. ---- */
+  --scrim-dari:         rgba(28, 24, 48, 0);
+  --scrim-ke:           rgba(28, 24, 48, 0.55);     /* peak alpha 0.55, and only over the copy block */
+
+  /* ---- Elevation. Deliberately almost none. ---- */
+  --bayang:             0 1px 0 0 rgba(28, 24, 48, 0.10);   /* card, a hard hairline lift */
+  --bayang-kuat:        0 -12px 32px -20px rgba(28, 24, 48, 0.50); /* sticky booking bar ONLY */
+
+  /* ---- Type, DESIGN.md 4. Fluid between 375px and 1440px. ---- */
+  --font-display: var(--font-newsreader), Georgia, 'Times New Roman', serif;
+  --font-ui: var(--font-figtree), system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --t-hero:    clamp(2.5rem, 1.7078rem + 3.3803vw, 4.75rem);
+  --t-h1:      clamp(2rem, 1.5599rem + 1.8779vw, 3.25rem);
+  --t-h2:      clamp(1.625rem, 1.3609rem + 1.1268vw, 2.375rem);
+  --t-h3:      clamp(1.3125rem, 1.1804rem + 0.5634vw, 1.6875rem);
+  --t-h4:      clamp(1.0625rem, 1.0185rem + 0.1878vw, 1.1875rem);
+  --t-body:    clamp(1rem, 0.978rem + 0.0939vw, 1.0625rem);
+  --t-kecil:   0.875rem;
+  --t-eyebrow: 0.75rem;
+  --t-harga:   clamp(1.375rem, 1.2869rem + 0.3756vw, 1.625rem);
+
+  /* ---- Space, DESIGN.md 5. 8px base, gutter steps up twice. ---- */
+  --gutter: 20px;
+  --wrap: 1200px;
+  --measure: 760px;
+  --section-y: 64px;
+  /* the terrace motif: alternating bands step in by this much, desktop only */
+  --terrace: 0px;
+
+  /* ---- Motion, DESIGN.md 5. ---- */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-cepat: 150ms;
+  --dur: 220ms;
+  --dur-lambat: 300ms;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+@media (min-width: 1025px) {
+  :root {
+    --gutter: 32px;
+    --section-y: 112px;
+    --terrace: 24px;
+  }
+}
+
+/* ---------------------------------------------------------------- 2. reset and R10 */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  /* R10: border radius is 0 on EVERY element on this site. The single exception permitted is
+     the floating WhatsApp button, which re declares it below. */
+  border-radius: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  /* so an anchor jump clears the sticky header */
+  scroll-padding-top: 96px;
+}
+
+body {
+  margin: 0;
+  background: var(--kanvas);
+  color: var(--tinta);
+  font-family: var(--font-ui);
+  font-size: var(--t-body);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* R20 / DESIGN.md 5: visible focus everywhere, never `outline: none` without a replacement. */
+:focus-visible {
+  outline: 3px solid var(--fokus);
+  outline-offset: 2px;
+}
+.on-dark :focus-visible,
+.site-header :focus-visible,
+.drawer :focus-visible {
+  outline-color: var(--fokus-inv);
+}
+
+/* ---------------------------------------------------------------- 3. type */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  margin: 0 0 0.5em;
+  text-wrap: balance;
+}
+h1 {
+  font-size: var(--t-h1);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+h2 {
+  font-size: var(--t-h2);
+  line-height: 1.15;
+}
+h3 {
+  font-size: var(--t-h3);
+  font-weight: 600;
+  line-height: 1.25;
+}
+h4,
+h5,
+h6 {
+  font-family: var(--font-ui);
+  font-size: var(--t-h4);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+p {
+  margin: 0 0 1rem;
+  max-width: 68ch;
+}
+
+a {
+  color: inherit;
+}
+
+strong {
+  font-weight: 600;
+}
+
+/* Numerals. DESIGN.md 4: prices in a rate table align on the digit, not on the glyph. */
+.tnum,
+.harga,
+.dp-day,
+.rate-table td,
+.rate-table th {
+  font-feature-settings: 'tnum' 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* R20 / DESIGN.md 3.4. Every one of these appears on BOTH grounds, so every one ships a pair.
+   The `-inv` variant is not optional. */
+.eyebrow {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--t-eyebrow);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bara-tua); /* 5,50 on kanvas */
+}
+.eyebrow-inv {
+  color: var(--bara); /* 8,21 on senja */
+}
+
+.lead {
+  font-size: clamp(1.0625rem, 1.0185rem + 0.1878vw, 1.1875rem);
+  line-height: 1.6;
+  color: var(--tinta);
+}
+
+.muted {
+  color: var(--tinta-lembut); /* 7,77 on kanvas */
+}
+.muted-inv {
+  color: var(--kabut); /* 8,32 on senja */
+}
+
+.link {
+  color: var(--lembayung-tua); /* 11,40 on kanvas */
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.link:hover {
+  color: var(--tinta);
+}
+.link-inv {
+  color: var(--lembayung-terang); /* 9,01 on senja */
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.link-inv:hover {
+  color: var(--kanvas);
+}
+
+.harga {
+  font-family: var(--font-ui);
+  font-size: var(--t-harga);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.kecil {
+  font-size: var(--t-kecil);
+  line-height: 1.55;
+}
+
+.kutip {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* ---------------------------------------------------------------- 4. layout */
+
+.wrap {
+  width: 100%;
+  max-width: var(--wrap);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.section {
+  padding-block: var(--section-y);
+}
+.section-tight {
+  padding-block: calc(var(--section-y) * 0.6);
+}
+
+/* The terrace motif, DESIGN.md 1 move 3. Alternating bands offset by a consistent 24px indent
+   on desktop with a 1px rule at each step. Never on mobile, where it would eat the gutter. */
+.band {
+  background: var(--kanvas);
+  border-top: 1px solid var(--garis);
+}
+.band-2 {
+  background: var(--kanvas-2);
+  border-top: 1px solid var(--garis);
+}
+.band-step > .wrap {
+  padding-left: calc(var(--gutter) + var(--terrace));
+}
+.band-dark {
+  background: var(--senja);
+  color: var(--kanvas);
+  border-top: 1px solid var(--garis-inv);
+}
+.band-dark h1,
+.band-dark h2,
+.band-dark h3,
+.band-dark h4 {
+  color: var(--kanvas);
+}
+.band-dark .lead {
+  color: var(--kanvas);
+}
+
+.grid {
+  display: grid;
+  gap: 1.5rem;
+}
+@media (min-width: 769px) {
+  .grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1025px) {
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 3rem;
+    align-items: start;
+  }
+  .split-narrow-left {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+}
+
+.stack-sm > * + * {
+  margin-top: 0.5rem;
+}
+.stack > * + * {
+  margin-top: 1rem;
+}
+.stack-lg > * + * {
+  margin-top: 2rem;
+}
+
+.section-head {
+  max-width: 62ch;
+  margin-bottom: 2rem;
+}
+.section-head h2 {
+  margin-top: 0.5rem;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.measure {
+  max-width: var(--measure);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link, keyboard first thing on the page. */
+.skip {
+  position: absolute;
+  left: 0.5rem;
+  top: -100px;
+  z-index: 200;
+  padding: 0.6rem 0.9rem;
+  background: var(--putih);
+  color: var(--tinta);
+  border: 2px solid var(--tinta);
+  transition: top var(--dur-cepat) var(--ease);
+}
+.skip:focus {
+  top: 0.5rem;
+}
+
+/* ---------------------------------------------------------------- 5. buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  /* R47: 44px minimum tap target */
+  min-height: 44px;
+  padding: 0.7rem 1.25rem;
+  border: 2px solid transparent;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease), transform var(--dur-cepat) var(--ease);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn-sm {
+  min-height: 40px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.875rem;
+}
+.btn-block {
+  width: 100%;
+}
+
+/* R5: the SALES CTA. DESIGN.md is explicit that every conversion button on this site is
+   --pinus with --putih text, hovering to --pinus-tua, on every ground. 6,47:1. */
+.btn-cta {
+  background: var(--pinus);
+  border-color: var(--pinus);
+  color: var(--putih);
+}
+.btn-cta:hover {
+  background: var(--pinus-tua);
+  border-color: var(--pinus-tua);
+}
+/* --pinus against --senja is only 2,54:1 as a SHAPE boundary, so on a dark ground the CTA keeps
+   its green fill and white label and takes a light hairline instead, 6,49:1. This is a boundary
+   fix, not a colour change: the button stays the one green the palette has. */
+.on-dark .btn-cta,
+.band-dark .btn-cta,
+.site-header .btn-cta,
+.drawer .btn-cta {
+  border-color: var(--garis-tegas-inv);
+}
+
+/* Filled secondary. Violet, --putih label, 10,25:1. */
+.btn-violet {
+  background: var(--lembayung);
+  border-color: var(--lembayung);
+  color: var(--putih);
+}
+.btn-violet:hover {
+  background: var(--lembayung-tua);
+  border-color: var(--lembayung-tua);
+}
+
+/* DESIGN.md 3.4 pair. Light ground label --pinus 5,85:1, dark ground label --pinus-terang 6,01:1.
+   This is the exact class that measured 1,52:1 on Wanantara because it had no inverted variant. */
+.btn-outline {
+  background: transparent;
+  border-color: var(--garis-tegas);
+  color: var(--pinus);
+}
+.btn-outline:hover {
+  border-color: var(--pinus);
+  background: rgba(30, 107, 69, 0.08);
+}
+.btn-outline-inv {
+  background: transparent;
+  border-color: var(--garis-tegas-inv);
+  color: var(--pinus-terang);
+}
+/* And a THIRD variant, for the one ground that is neither light nor a solid dark section: the
+   translucent header. On a fully opaque --senja section `.btn-outline-inv` measures 6,01:1, but on
+   the 0,82 alpha bar over a light page it is only 3,94:1 and fails. This is the same structural
+   answer R20 and DESIGN.md 3.4 demand, applied to a third ground rather than assumed away.
+   --kanvas on the composited bar is 9,73:1 worst case.
+   It also removes a second green from the header, which DESIGN.md section 2 explicitly wants: a
+   decorative green competing with the CTA green stops the CTA being a signal. This button is
+   NAVIGATION, not a sales CTA, so R5 does not ask it to be green at all. */
+.btn-outline-head {
+  background: transparent;
+  border-color: var(--garis-tegas-inv);
+  color: var(--kanvas);
+}
+.btn-outline-head:hover {
+  border-color: var(--bara);
+  background: rgba(247, 243, 236, 0.1);
+}
+.btn-outline-inv:hover {
+  border-color: var(--kanvas);
+  background: rgba(247, 243, 236, 0.1);
+}
+
+/* Quiet text button. Same pair discipline. */
+.btn-ghost {
+  color: var(--lembayung-tua);
+  border-color: transparent;
+}
+.btn-ghost:hover {
+  background: rgba(74, 53, 115, 0.08);
+}
+.btn-ghost-inv {
+  color: var(--lembayung-terang);
+  border-color: transparent;
+}
+.btn-ghost-inv:hover {
+  background: rgba(247, 243, 236, 0.1);
+}
+
+/* ---------------------------------------------------------------- 6. cards, chips, badges */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--putih);
+  border: 1px solid var(--garis);
+  box-shadow: var(--bayang);
+}
+.band-2 .card {
+  background: var(--putih);
+}
+.card-pad {
+  padding: 1.25rem;
+}
+.card-link {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.card-link:hover {
+  border-color: var(--lembayung);
+  transform: translateY(-2px);
+}
+.card-dark {
+  background: var(--senja);
+  color: var(--kanvas);
+  border-color: var(--garis-inv);
+}
+
+/* R50: a card title and its secondary label are separate BLOCK children with an explicit gap.
+   Two adjacent inline text nodes glue into `Dome SenjaTenda`. */
+.titik {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.titik-utama {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--t-h3);
+  font-weight: 600;
+  line-height: 1.25;
+}
+.titik-label {
+  display: block;
+  font-size: var(--t-kecil);
+  line-height: 1.45;
+  color: var(--tinta-lembut);
+}
+.on-dark .titik-label,
+.card-dark .titik-label,
+.band-dark .titik-label {
+  color: var(--kabut);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--batu);
+  border: 1px solid var(--garis-tegas);
+  color: var(--tinta); /* 11,24 on batu */
+  font-size: var(--t-kecil);
+  font-weight: 500;
+  line-height: 1.3;
+}
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* --tanah is FILL ONLY and always carries white text, 6,53:1. */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  background: var(--tanah);
+  color: var(--putih);
+  font-size: var(--t-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+.badge-violet {
+  background: var(--lembayung);
+}
+.badge-pinus {
+  background: var(--pinus);
+}
+
+.rule {
+  height: 1px;
+  background: var(--garis);
+  border: 0;
+  margin: 2rem 0;
+}
+.on-dark .rule,
+.band-dark .rule {
+  background: var(--garis-inv);
+}
+
+/* A hairline accent rule, the terrace step made visible at component scale. */
+.tangga {
+  display: block;
+  width: 48px;
+  height: 3px;
+  background: var(--bara-tua);
+  margin-bottom: 1rem;
+}
+.on-dark .tangga,
+.band-dark .tangga {
+  background: var(--bara);
+}
+
+.breadcrumb {
+  display: block;
+  font-size: var(--t-kecil);
+  color: var(--tinta-lembut);
+  margin-bottom: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.on-dark .breadcrumb {
+  color: var(--kabut);
+}
+.breadcrumb a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Interior page hero. Dusk ground, and it counts against the rationed budget. */
+.pagehero {
+  background: var(--senja);
+  color: var(--kanvas);
+  padding-block: calc(var(--section-y) * 0.75);
+  border-bottom: 1px solid var(--garis-inv);
+}
+.pagehero h1 {
+  color: var(--kanvas);
+  margin-bottom: 0.75rem;
+}
+.pagehero .lead {
+  color: var(--kanvas);
+  max-width: 62ch;
+}
+
+/* ---------------------------------------------------------------- 7. media placeholders */
+
+/* Annotated placeholder. Every slot carries the full generation context so MEDIA.md and the
+   page agree, and the ratio class holds the box so nothing shifts when the real file lands.
+   R15: a <video src> or <img src> is NEVER pointed at a file that is not on disk. Media.tsx
+   checks the build time manifest first and falls back to this block. */
+.ph {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  overflow: hidden;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--kanvas-2),
+    var(--kanvas-2) 10px,
+    var(--batu) 10px,
+    var(--batu) 20px
+  );
+  border: 1.5px dashed var(--lembayung);
+}
+.ph-tag {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  background: rgba(21, 16, 42, 0.92);
+  color: var(--kanvas);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+.ph-1-1 {
+  aspect-ratio: 1 / 1;
+}
+.ph-4-3 {
+  aspect-ratio: 4 / 3;
+}
+.ph-16-9 {
+  aspect-ratio: 16 / 9;
+}
+.ph-3-2 {
+  aspect-ratio: 3 / 2;
+}
+
+.media-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.media-img.ph-1-1 {
+  aspect-ratio: 1 / 1;
+}
+.media-img.ph-4-3 {
+  aspect-ratio: 4 / 3;
+}
+.media-img.ph-16-9 {
+  aspect-ratio: 16 / 9;
+}
+.media-img.ph-3-2 {
+  aspect-ratio: 3 / 2;
+}
+.media-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------------------------------------------------------------- 8. header, R16 R31 R47 R53 */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  /* R53 WARNING: this backdrop-filter makes the header the containing block for any
+     position:fixed DESCENDANT. The drawer, the scrim, the welcome modal, the floating CTA and
+     the lightbox are therefore rendered as SIBLINGS of <header> or portalled to document.body.
+     Nesting any of them here collapses them to a 76px strip across the topbar. */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--kanvas);
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  border-bottom: 1px solid transparent;
+}
+
+/* R31, and this is the whole point of the rule. The hero behind the unscrolled bar is an 8s dusk
+   video, so the pixels behind the nav are NOT reliably dark: a frame can put bright amber sky right
+   there, and on an interior page the bar sits over whatever scrolls under it. So the bar carries its
+   own translucent ground and the nav text is measured against the WORST case, which is the lightest
+   possible thing behind it.
+
+   IMPORTANT, and this is why it is a background-color and not a ::before gradient. A pseudo element
+   is NOT in the ancestor chain, so `getComputedStyle(node).backgroundColor` cannot see it, and the
+   R20 sweep in scripts/qa-r20.mjs therefore measured the nav text against the BODY canvas and
+   reported 1:1 on a bar that is actually legible. A rule that can only be verified by eye is the
+   rule that does not get verified, so the ground is a real background-color that the sweep composites.
+
+   Measured worst case, --kanvas #F7F3EC over rgba(21,16,42,0.82) over pure WHITE:
+   effective ground #3F3B50, ratio 9,73:1. Over the cream body it is 10,03:1. Both clear 4,5 easily.
+
+   R2 is preserved: this is a 76px band at the top of an 88vh hero, about 9 percent of it, which is
+   the localised darkening R2 endorses, not a full section wash. The other 91 percent of the clip is
+   untouched. */
+.site-header {
+  background-color: rgba(21, 16, 42, 0.82);
+}
+.site-header.is-scrolled {
+  background-color: var(--senja-pekat);
+  border-bottom-color: var(--garis-inv);
+}
+.site-header > .wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 76px;
+}
+
+/* R50 applies to the BRAND LOCKUP itself. `Lembayung` plus `LEMBANG, BANDUNG UTARA` as two
+   inline nodes renders as `LembayungLEMBANG, BANDUNG UTARA`. Both children are block level with
+   an explicit gap, and the category line is HTML, never baked into the logo image (R62). */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+  flex: 0 0 auto;
+}
+.brand img {
+  width: auto;
+  height: 34px;
+}
+.brand-mark-ph {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+}
+.brand-mark-ph i {
+  display: block;
+  height: 4px;
+  background: var(--bara);
+}
+.brand-mark-ph i:nth-child(1) {
+  width: 40%;
+  background: var(--lembayung-terang);
+}
+.brand-mark-ph i:nth-child(2) {
+  width: 60%;
+  background: #a58fd0;
+}
+.brand-mark-ph i:nth-child(3) {
+  width: 80%;
+  background: var(--bara);
+}
+.brand-mark-ph i:nth-child(4) {
+  width: 100%;
+  background: var(--bara);
+}
+.brand-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.brand-word {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+.brand-kategori {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kabut);
+}
+.brand[data-ground='light'] .brand-kategori {
+  color: var(--tinta-lembut);
+}
+
+.header-nav {
+  display: none;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+@media (min-width: 1025px) {
+  .header-nav {
+    display: flex;
+    align-items: stretch;
+    gap: 0.15rem;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .hide-lg {
+    display: none !important;
+  }
+}
+@media (max-width: 1024px) {
+  .hide-sm {
+    display: none !important;
+  }
+}
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid transparent;
+  background: none;
+  color: var(--kanvas);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.nav-link:hover,
+.nav-item.is-open > .nav-link {
+  color: var(--bara);
+}
+.nav-link.is-active {
+  color: var(--bara);
+  box-shadow: inset 0 -3px 0 0 var(--bara);
+}
+.nav-caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  transition: transform var(--dur) var(--ease);
+}
+.nav-item.is-open .nav-caret {
+  transform: rotate(180deg);
+}
+
+/* ---- mega panel, R16 R16.1 R32 R57 ---- */
+
+.mega {
+  position: absolute;
+  top: 100%;
+  display: grid;
+  grid-template-rows: 0fr;
+  z-index: 70;
+  /* width: max-content is LOAD BEARING, do not delete it as redundant.
+     `overflow: hidden` below makes this box a scroll container, and a scroll container has an
+     automatic minimum size of zero, so an absolutely positioned box with `left` set and `width:
+     auto` shrink-to-fits to the AVAILABLE width instead of to its content. The available width
+     here is the parent <li>, about 110px. Measured on this build without this line: the panel
+     rendered 124px wide and clipped every label mid word ("Lokasi dan Rut", "Pertanyaan Ur")
+     while still passing every positional check, because it was inside the viewport and caused no
+     page overflow. It was only visible in a screenshot, which is R51 in one line. */
+  width: max-content;
+  /* R57: while closed this panel has ZERO layout footprint on BOTH axes. grid-template-rows
+     collapses the height, and max-width:0 plus overflow:hidden collapses the width, so its right
+     edge equals its left edge and it can never inflate document.documentElement.scrollWidth.
+     Mabrur reported scrollWidth 385 against innerWidth 375 because a shut panel was still
+     340px wide at left:0 while invisible in every screenshot. */
+  max-width: 0;
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: grid-template-rows var(--dur) var(--ease), opacity var(--dur) var(--ease),
+    visibility 0s linear var(--dur);
+}
+.nav-item.is-open > .mega {
+  grid-template-rows: 1fr;
+  /* R16.1: EVERY panel carries the viewport clamp, no exceptions. */
+  max-width: calc(100vw - 2rem);
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition: grid-template-rows var(--dur) var(--ease), opacity var(--dur) var(--ease),
+    visibility 0s;
+}
+
+/* R16.1 geometry. The leftmost item's panel anchors left:0 and grows RIGHT, the rightmost
+   anchors right:0 and grows LEFT, and a true middle item may centre. Centring every panel to a
+   narrow <li> with left:50%; translateX(-50%) and no clamp is how Dapur Tepat overflowed the
+   window at 1025px. */
+.mega-left {
+  left: 0;
+  right: auto;
+  transform: translateX(var(--mega-shift, 0px));
+}
+.mega-right {
+  right: 0;
+  left: auto;
+  transform: translateX(var(--mega-shift, 0px));
+}
+.mega-center {
+  left: 50%;
+  transform: translateX(calc(-50% + var(--mega-shift, 0px)));
+}
+/* Between the 1025px drawer boundary and 1200px there is not enough room either side of a
+   centred panel, so the centre anchor falls back to left:0 and grows right. It keeps reading
+   --mega-shift, which is the measured nudge Header.tsx writes: dropping to `transform: none`
+   here would silently discard that clamp. */
+@media (max-width: 1200px) {
+  .mega-center {
+    left: 0;
+    transform: translateX(var(--mega-shift, 0px));
+  }
+}
+
+.mega-inner {
+  overflow: hidden;
+  background: var(--putih);
+  border: 2px solid var(--senja);
+  box-shadow: 0 16px 40px -28px rgba(28, 24, 48, 0.6);
+  max-width: calc(100vw - 2rem);
+}
+.mega-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 220px)) minmax(200px, 252px);
+  gap: 1.5rem;
+  padding: 1.5rem;
+  max-width: calc(100vw - 2rem);
+}
+.mega-group-title {
+  display: block;
+  font-size: var(--t-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bara-tua);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--garis);
+}
+.mega-link {
+  display: flex;
+  flex-direction: column;
+  /* R50: title and label are separate BLOCK children with an explicit gap. */
+  gap: 2px;
+  padding: 0.45rem 0.5rem;
+  margin-inline: -0.5rem;
+  text-decoration: none;
+  color: var(--tinta);
+  transition: background-color var(--dur-cepat) var(--ease);
+}
+.mega-link:hover {
+  background: var(--kanvas-2);
+}
+.mega-link-title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+.mega-link-label {
+  display: block;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--tinta-lembut);
+}
+.mega-highlight {
+  background: var(--senja);
+  color: var(--kanvas);
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.mega-highlight h4 {
+  margin: 0;
+  color: var(--kanvas);
+}
+.mega-highlight p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--kabut);
+  max-width: none;
+}
+.mega-highlight .btn {
+  margin-top: 0.35rem;
+}
+
+/* ---- burger, drawer and scrim ---- */
+
+.burger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--garis-tegas-inv);
+  background: transparent;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+@media (min-width: 1025px) {
+  .burger {
+    display: none;
+  }
+}
+.burger span,
+.burger span::before,
+.burger span::after {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--kanvas);
+  transition: transform var(--dur) var(--ease), opacity var(--dur-cepat) var(--ease);
+}
+.burger span {
+  position: relative;
+}
+.burger span::before,
+.burger span::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+.burger span::before {
+  top: -6px;
+}
+.burger span::after {
+  top: 6px;
+}
+.burger.is-open span {
+  background: transparent;
+}
+.burger.is-open span::before {
+  transform: translateY(6px) rotate(45deg);
+}
+.burger.is-open span::after {
+  transform: translateY(-6px) rotate(-45deg);
+}
+.drawer .burger {
+  border-color: var(--garis-tegas-inv);
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(21, 16, 42, 0.62);
+  opacity: 0;
+  /* while shut it is fully out of the way, so it can never swallow a click, the HIM-93 class */
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease), visibility 0s linear var(--dur);
+}
+.scrim.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity var(--dur) var(--ease), visibility 0s;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  width: min(360px, 92vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--senja-pekat);
+  color: var(--kanvas);
+  border-left: 2px solid var(--bara);
+  transform: translateX(100%);
+  visibility: hidden;
+  overflow-y: auto;
+  transition: transform var(--dur-lambat) var(--ease), visibility 0s linear var(--dur-lambat);
+}
+.drawer.is-open {
+  transform: none;
+  visibility: visible;
+  transition: transform var(--dur-lambat) var(--ease), visibility 0s;
+}
+@media (min-width: 1025px) {
+  .drawer,
+  .scrim {
+    display: none;
+  }
+}
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem var(--gutter);
+  border-bottom: 1px solid var(--garis-inv);
+}
+.drawer-body {
+  flex: 1 1 auto;
+  padding: 0.5rem var(--gutter) 1rem;
+}
+.drawer-foot {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem var(--gutter) 1.5rem;
+  border-top: 1px solid var(--garis-inv);
+}
+.drawer-group + .drawer-group {
+  border-top: 1px solid var(--garis-inv);
+}
+.drawer-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 52px;
+  padding: 0.75rem 0;
+  border: 0;
+  background: none;
+  color: var(--kanvas);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.drawer-trigger .nav-caret {
+  color: var(--bara);
+}
+.drawer-group.is-open .nav-caret {
+  transform: rotate(180deg);
+}
+.drawer-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows var(--dur) var(--ease);
+}
+.drawer-group.is-open .drawer-panel {
+  grid-template-rows: 1fr;
+}
+.drawer-panel > div {
+  overflow: hidden;
+  padding-bottom: 0.5rem;
+}
+.drawer-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.6rem 0;
+  min-height: 44px;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--kanvas);
+}
+.drawer-link-title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+.drawer-link-label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--kabut);
+  line-height: 1.4;
+}
+
+/* ---------------------------------------------------------------- 9. announcement bar */
+
+.announce {
+  background: var(--lembayung);
+  color: var(--putih); /* 10,25:1 */
+  font-size: var(--t-kecil);
+  text-align: center;
+}
+.announce .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-height: 40px;
+  padding-block: 0.4rem;
+}
+.announce a {
+  color: var(--putih);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- 10. hero, R2 R30 R44 */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 88svh;
+  display: flex;
+  align-items: flex-end;
+  background: var(--senja);
+  color: var(--kanvas);
+  overflow: hidden;
+  /* pull up under the sticky translucent header so the video fills the top of the viewport */
+  margin-top: -76px;
+  padding-top: 76px;
+}
+.hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.hero-media .ph,
+.hero-media .media-video,
+.hero-media .media-img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+.hero-media .ph {
+  align-items: center;
+  justify-content: center;
+}
+.hero-media .ph-tag {
+  align-self: flex-end;
+}
+/* R2 scrim contract: bottom up gradient peaking at --scrim-ke, alpha 0,55, and only under the
+   copy. No full section wash. Decorative, so pointer-events:none, and it sits BELOW the copy in
+   the stacking order rather than on top of it. */
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--scrim-ke) 0%, var(--scrim-dari) 62%);
+}
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  padding-block: 3rem 4rem;
+  width: 100%;
+}
+.hero-copy {
+  max-width: 46rem;
+  /* R2: legibility comes from a LOCALISED translucent panel behind the copy block only, which
+     is why the video stays clearly visible everywhere else in the frame. */
+  background: rgba(21, 16, 42, 0.58);
+  border-left: 3px solid var(--bara);
+  padding: 1.5rem;
+  backdrop-filter: blur(2px);
+}
+.hero h1 {
+  font-size: var(--t-hero);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  color: var(--kanvas);
+  margin-bottom: 0.75rem;
+}
+.hero .lead {
+  color: var(--kanvas);
+  max-width: 44ch;
+}
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin-top: 1.25rem;
+  font-size: var(--t-kecil);
+  color: var(--kanvas);
+}
+.hero-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.hero-meta b {
+  color: var(--bara);
+}
+
+/* ---------------------------------------------------------------- 11. R48 snap carousel
+
+   Built ONCE and reused by EVERY section whose peer children number more than 3, on EVERY
+   route including detail pages and the "unit lainnya" and "artikel lainnya" blocks. At 768px
+   and below it is a horizontal snap scroller; above that it becomes a plain grid.
+
+   A vertical stack or a cramped 2 column grid of 4+ cards on mobile is a failed build. */
+
+.snap-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 82vw;
+  gap: 1rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  /* bleed to the screen edge so the next card peeks, WITHOUT page level overflow */
+  padding: 0.25rem var(--gutter) 1.25rem;
+  margin-inline: calc(var(--gutter) * -1);
+  scrollbar-width: thin;
+}
+.snap-row > * {
+  scroll-snap-align: start;
+  min-width: 0;
+}
+@media (min-width: 560px) {
+  .snap-row {
+    grid-auto-columns: 56vw;
+  }
+}
+@media (min-width: 769px) {
+  .snap-row {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    scroll-snap-type: none;
+    padding: 0;
+    margin-inline: 0;
+  }
+  .snap-row.cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1025px) {
+  .snap-row.cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .snap-row.cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+/* Long index routes group into category rows and carousel WITHIN each group, rather than one
+   endless vertical stack. This is the pattern portfolio-mabrur got right on /paket/. */
+.group-row + .group-row {
+  margin-top: 3rem;
+}
+.group-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--garis);
+}
+.group-row-head h3 {
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------- 12. forms, R12 R21 R57 */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.field-label {
+  display: block;
+  font-size: var(--t-kecil);
+  font-weight: 600;
+  color: var(--tinta);
+}
+.on-dark .field-label,
+.band-dark .field-label {
+  color: var(--kanvas);
+}
+.field-hint {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--tinta-lembut);
+}
+.on-dark .field-hint,
+.band-dark .field-hint {
+  color: var(--kabut);
+}
+.field-error {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--bahaya);
+}
+.on-dark .field-error,
+.band-dark .field-error {
+  color: var(--bahaya-terang);
+}
+
+.input,
+.textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 0.6rem 0.75rem;
+  background: var(--putih);
+  /* --garis is DECORATIVE and fails 3:1 as a control border, so controls use --garis-tegas */
+  border: 2px solid var(--garis-tegas);
+  color: var(--tinta);
+  transition: border-color var(--dur-cepat) var(--ease);
+}
+.input:hover,
+.textarea:hover {
+  border-color: var(--tinta-lembut);
+}
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--tinta-lembut);
+  opacity: 1;
+}
+
+/* R12: there is NO native <select> anywhere on this site. Select.tsx owns this block. */
+.select,
+.datepick {
+  position: relative;
+  min-width: 0;
+}
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 46px;
+  padding: 0.6rem 0.75rem;
+  background: var(--putih);
+  border: 2px solid var(--garis-tegas);
+  color: var(--tinta);
+  font-size: 0.9375rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-cepat) var(--ease);
+}
+.select-trigger:hover {
+  border-color: var(--tinta-lembut);
+}
+.select-trigger > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-caret {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--tinta);
+  transition: transform var(--dur) var(--ease);
+}
+.select.is-open .select-caret,
+.datepick.is-open .select-caret {
+  transform: rotate(180deg);
+}
+
+/* R57: the SHUT state of every absolutely positioned panel on this site. grid-template-rows
+   collapses height, max-width:0 plus overflow:hidden collapses width, visibility:hidden takes
+   it out of the a11y tree, so the closed panel contributes nothing to scrollWidth on either
+   axis while STILL animating open and shut, which a bare display:none cannot do. */
+.select-panel,
+.dp-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-rows: 0fr;
+  max-width: 0;
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--putih);
+  border: 2px solid var(--senja);
+  transform: translateX(var(--panel-shift, 0px));
+  transition: grid-template-rows var(--dur) var(--ease), opacity var(--dur-cepat) var(--ease),
+    visibility 0s linear var(--dur);
+}
+.select.is-open .select-panel,
+.datepick.is-open .dp-panel {
+  grid-template-rows: 1fr;
+  /* and the open state is clamped to the viewport, R16.1 geometry applied to every panel */
+  max-width: calc(100vw - 2rem);
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition: grid-template-rows var(--dur) var(--ease), opacity var(--dur-cepat) var(--ease),
+    visibility 0s;
+}
+.select-panel-inner {
+  overflow: hidden auto;
+  max-height: 17rem;
+  width: min(24rem, calc(100vw - 2rem));
+}
+.select-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.select-option.is-active,
+.select-option:hover {
+  background: var(--kanvas-2);
+}
+.select-option[aria-selected='true'] {
+  box-shadow: inset 3px 0 0 0 var(--lembayung);
+}
+/* R50: option title and helper line are separate BLOCK children with an explicit gap. */
+.select-option-title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+.select-option-label {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--tinta-lembut);
+}
+
+/* R21 range date picker. This build is a booking site, so it lives or dies here. */
+.dp-panel-inner {
+  overflow: hidden;
+  width: min(21rem, calc(100vw - 2rem));
+  padding: 0.85rem;
+}
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.dp-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.dp-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--garis-tegas);
+  background: var(--putih);
+  color: var(--tinta);
+  cursor: pointer;
+}
+.dp-nav:hover:not(:disabled) {
+  border-color: var(--lembayung);
+}
+/* R20(d): a disabled control is exempt from the contrast sweep, WCAG 1.4.3 inactive component. */
+.dp-nav:disabled {
+  color: var(--tinta-lembut);
+  background: var(--batu);
+  cursor: not-allowed;
+}
+.dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.dp-dow {
+  padding: 0.3rem 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--tinta-lembut);
+}
+.dp-empty {
+  min-height: 40px;
+}
+.dp-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid transparent;
+  background: var(--putih);
+  color: var(--tinta);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color var(--dur-cepat) var(--ease);
+}
+.dp-day:hover:not(:disabled) {
+  background: var(--kanvas-2);
+  border-color: var(--lembayung);
+}
+.dp-day:disabled {
+  color: var(--batu);
+  cursor: not-allowed;
+}
+.dp-day.is-weekend:not(:disabled) {
+  color: var(--tanah);
+  font-weight: 600;
+}
+.dp-day.is-today {
+  border-color: var(--garis-tegas);
+  font-weight: 700;
+}
+/* the selected range: both ends are filled violet with white text, 10,25:1, and the interior
+   days take a light violet tint that keeps --tinta above 4,5:1 */
+.dp-day.in-range {
+  background: #ddd3f0;
+}
+.dp-day.is-edge {
+  background: var(--lembayung);
+  border-color: var(--lembayung);
+  color: var(--putih);
+  font-weight: 700;
+}
+.dp-foot {
+  margin: 0.6rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--tinta-lembut);
+  max-width: none;
+}
+.dp-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  align-items: baseline;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--garis);
+  font-size: var(--t-kecil);
+}
+
+/* ---------------------------------------------------------------- 13. booking panel */
+
+.booking {
+  background: var(--putih);
+  border: 2px solid var(--senja);
+  padding: 1.25rem;
+}
+.booking-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+@media (min-width: 769px) {
+  .booking-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .booking-grid > .booking-span {
+    grid-column: 1 / -1;
+  }
+}
+@media (min-width: 1025px) {
+  .booking-inline .booking-grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: end;
+  }
+  .booking-inline .booking-grid > .booking-span {
+    grid-column: auto;
+  }
+}
+.booking-out {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--garis);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+/* The ONE element in the whole system allowed --bayang-kuat, DESIGN.md 5. */
+.sticky-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem var(--gutter);
+  background: var(--putih);
+  border-top: 2px solid var(--senja);
+  box-shadow: var(--bayang-kuat);
+}
+@media (min-width: 1025px) {
+  .sticky-bar {
+    display: none;
+  }
+}
+.sticky-bar-harga {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+.sticky-bar-harga .harga {
+  font-size: 1.05rem;
+}
+.sticky-bar-harga span {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--tinta-lembut);
+  line-height: 1.3;
+}
+/* the mobile sticky bar and the WhatsApp oval must never overlap, so the page reserves room */
+body:has(.sticky-bar) {
+  padding-bottom: 72px;
+}
+@media (min-width: 1025px) {
+  body:has(.sticky-bar) {
+    padding-bottom: 0;
+  }
+}
+
+/* ---------------------------------------------------------------- 14. gallery, R18 */
+
+.gallery {
+  display: grid;
+  gap: 0.6rem;
+}
+.gallery-stage {
+  position: relative;
+  width: 100%;
+  /* 1:1, matching the ratio the manifest locks for every unit detail image */
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--kanvas-2);
+  border: 1px solid var(--garis);
+}
+/* R18: the main image CROSSFADES rather than jumping. Slides stack at one position, which is
+   also why this container is exempt from the R48 carousel sweep, it is not a card row. */
+.gallery-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--dur-lambat) var(--ease);
+}
+.gallery-slide.is-shown {
+  opacity: 1;
+}
+.gallery-slide .media-img,
+.gallery-slide .ph {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+.gallery-thumbs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+/* R18: thumbnails are REAL buttons, Tab reachable, Enter and Space activate, and the active one
+   carries a visible selected state. A gallery whose sub photos are inert decoration is a fail. */
+.gallery-thumb {
+  position: relative;
+  padding: 0;
+  border: 2px solid var(--garis-tegas);
+  background: var(--kanvas-2);
+  cursor: pointer;
+  opacity: 0.72;
+  transition: opacity var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.gallery-thumb:hover {
+  opacity: 1;
+}
+.gallery-thumb[aria-selected='true'] {
+  opacity: 1;
+  border-color: var(--lembayung);
+  box-shadow: inset 0 0 0 2px var(--putih);
+}
+.gallery-thumb .media-img,
+.gallery-thumb .ph {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+}
+.gallery-thumb .ph-tag {
+  font-size: 0.58rem;
+  padding: 0.25rem 0.3rem;
+}
+.gallery-kind {
+  display: block;
+  padding: 0.25rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tinta-lembut);
+  background: var(--putih);
+}
+.gallery-thumb[aria-selected='true'] .gallery-kind {
+  color: var(--putih);
+  background: var(--lembayung);
+}
+
+/* ---------------------------------------------------------------- 15. variant picker, R42 */
+
+/* R42: capacity and view are VARIANT dimensions on a unit type. This picker swaps sku, price
+   and image IN PLACE. It never navigates between slugs, and the unit's NAME never changes. */
+.varian {
+  display: grid;
+  gap: 0.5rem;
+}
+.varian-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.varian-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  background: var(--putih);
+  border: 2px solid var(--garis-tegas);
+  color: var(--tinta);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.varian-btn:hover {
+  border-color: var(--lembayung);
+}
+.varian-btn[aria-pressed='true'] {
+  background: var(--lembayung);
+  border-color: var(--lembayung);
+  color: var(--putih);
+}
+.varian-btn-utama {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.25;
+}
+.varian-btn-label {
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--tinta-lembut);
+}
+.varian-btn[aria-pressed='true'] .varian-btn-label {
+  color: #ded6ef;
+}
+.varian-out {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9rem;
+  background: var(--kanvas-2);
+  border: 1px solid var(--garis);
+}
+.varian-out dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.75rem;
+  margin: 0;
+  font-size: var(--t-kecil);
+}
+.varian-out dt {
+  color: var(--tinta-lembut);
+}
+.varian-out dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- 16. rate table, filters */
+
+.rate-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-kecil);
+}
+.rate-table caption {
+  text-align: left;
+  font-size: var(--t-kecil);
+  color: var(--tinta-lembut);
+  padding-bottom: 0.5rem;
+}
+.rate-table th,
+.rate-table td {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--garis);
+  text-align: left;
+  vertical-align: top;
+}
+.rate-table thead th {
+  background: var(--kanvas-2);
+  font-weight: 700;
+}
+.rate-table td.num,
+.rate-table th.num {
+  text-align: right;
+  white-space: nowrap;
+}
+.table-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  padding: 1rem;
+  background: var(--kanvas-2);
+  border: 1px solid var(--garis);
+  margin-bottom: 2rem;
+}
+.filter-bar .field {
+  flex: 1 1 190px;
+}
+.filter-count {
+  flex: 0 0 auto;
+  font-size: var(--t-kecil);
+  color: var(--tinta-lembut);
+  padding-bottom: 0.7rem;
+}
+
+.spec-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  font-size: var(--t-kecil);
+}
+.spec-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--garis);
+}
+.spec-list dt {
+  color: var(--tinta-lembut);
+}
+.spec-list dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+.tick-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+  font-size: var(--t-kecil);
+}
+.tick-list li {
+  display: grid;
+  grid-template-columns: 1.1rem 1fr;
+  gap: 0.6rem;
+  align-items: start;
+}
+.tick-list li::before {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin-top: 0.42rem;
+  background: var(--pinus);
+}
+.tick-list.tick-no li::before {
+  background: var(--batu);
+}
+.on-dark .tick-list li::before,
+.band-dark .tick-list li::before {
+  background: var(--pinus-terang);
+}
+
+.note {
+  padding: 0.9rem 1rem;
+  background: var(--kanvas-2);
+  border-left: 3px solid var(--bara-tua);
+  font-size: var(--t-kecil);
+}
+.note p:last-child {
+  margin-bottom: 0;
+}
+.on-dark .note,
+.band-dark .note {
+  background: rgba(247, 243, 236, 0.08);
+  border-left-color: var(--bara);
+}
+
+.stars {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--bara-tua);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+}
+.on-dark .stars,
+.band-dark .stars {
+  color: var(--bara);
+}
+
+/* ---------------------------------------------------------------- 17. FAQ accordion, R60 */
+
+.faq-item {
+  border-bottom: 1px solid var(--garis);
+}
+.faq-trigger {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-height: 56px;
+  padding: 1rem 0;
+  border: 0;
+  background: none;
+  color: var(--tinta);
+  font-family: var(--font-ui);
+  font-size: var(--t-h4);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.faq-trigger .nav-caret {
+  margin-top: 0.55rem;
+  color: var(--lembayung-tua);
+  flex: 0 0 auto;
+}
+.faq-item.is-open .nav-caret {
+  transform: rotate(180deg);
+}
+.faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows var(--dur) var(--ease);
+}
+.faq-item.is-open .faq-panel {
+  grid-template-rows: 1fr;
+}
+.faq-panel > div {
+  overflow: hidden;
+}
+.faq-panel p {
+  padding-bottom: 1rem;
+  margin: 0;
+  color: var(--tinta-lembut);
+}
+
+/* ---------------------------------------------------------------- 18. article */
+
+.prose {
+  max-width: var(--measure);
+}
+.prose h2 {
+  margin-top: 2.25rem;
+  font-size: var(--t-h2);
+}
+.prose h3 {
+  margin-top: 1.75rem;
+}
+.prose p {
+  max-width: 72ch;
+}
+.prose ul,
+.prose ol {
+  max-width: 72ch;
+  padding-left: 1.25rem;
+}
+.prose li {
+  margin-bottom: 0.4rem;
+}
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  font-size: var(--t-kecil);
+  color: var(--tinta-lembut);
+}
+.on-dark .article-meta {
+  color: var(--kabut);
+}
+@media (min-width: 1025px) {
+  /* the high quality news pattern: main column plus a RIGHT sidebar, not a flat feed */
+  .article-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+    gap: 3rem;
+    align-items: start;
+  }
+  .article-side {
+    position: sticky;
+    top: 100px;
+  }
+}
+.side-box {
+  background: var(--kanvas-2);
+  border: 1px solid var(--garis);
+  padding: 1.1rem;
+}
+.side-box + .side-box {
+  margin-top: 1.25rem;
+}
+.side-box h3 {
+  font-size: var(--t-h4);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+.side-list {
+  display: grid;
+  gap: 0.75rem;
+}
+.side-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+  color: inherit;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--garis);
+}
+.side-list > .side-link:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.side-link-title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+.side-link-label {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--tinta-lembut);
+}
+
+/* ---------------------------------------------------------------- 19. footer, R35 R43 */
+
+.footer {
+  background: var(--senja-pekat);
+  color: var(--kanvas);
+  padding-block: var(--section-y) 2rem;
+  border-top: 3px solid var(--bara);
+}
+.footer-grid {
+  display: grid;
+  gap: 2.5rem;
+}
+@media (min-width: 560px) {
+  .footer-nav-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1025px) {
+  .footer-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+    gap: 3rem;
+  }
+  .footer-nav-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.footer-nav-grid {
+  display: grid;
+  gap: 2rem;
+}
+.footer h3 {
+  font-family: var(--font-ui);
+  font-size: var(--t-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bara);
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--garis-inv);
+}
+.footer-links {
+  display: grid;
+  gap: 0.7rem;
+}
+.footer-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--kanvas);
+}
+.footer-link:hover .footer-link-title {
+  color: var(--bara);
+}
+.footer-link-title {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  transition: color var(--dur-cepat) var(--ease);
+}
+.footer-link-label {
+  display: block;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--kabut);
+}
+.footer-contact {
+  display: grid;
+  gap: 0.5rem;
+  font-size: var(--t-kecil);
+  color: var(--kabut);
+}
+.footer-contact a {
+  color: var(--kanvas);
+}
+/* Keep the R35 dofollow backlink clear of the fixed WhatsApp pill. The pill sits bottom right and
+   the footer bottom row is the last thing on the page, so at desktop widths the two collide and the
+   pill covers the tail of "Designed & Developed by Himay Studio". That link is the primary SEO
+   equity channel back to himaystudio.com, so it has to stay fully visible and clickable. */
+@media (min-width: 1025px) {
+  .footer-bottom {
+    padding-right: 210px;
+  }
+}
+.footer-bottom {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--garis-inv);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--t-kecil);
+  color: var(--kabut);
+}
+/* R35(c): DOFOLLOW, and never nofollow, sponsored or ugc. This is the primary SEO equity
+   channel back to himaystudio.com. */
+.footer-credit {
+  color: var(--kanvas);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.footer-credit:hover {
+  color: var(--bara);
+}
+
+/* ---------------------------------------------------------------- 20. floats and overlays */
+
+/* R10: the ONE oval on this entire site. R17: the icon is the shared public/img/whatsapp.png
+   asset, never a hand drawn SVG. R45: on desktop it is icon PLUS a CTA label pill, collapsing
+   to the icon only oval below 1025px. */
+.wa-float {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 80;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem;
+  /* WhatsApp brand dark teal. The lighter brand green #128C7E puts --putih at only 4,14:1, under
+     the 4,5 floor, which the R20 sweep caught. #075E54 is the same brand family at 7,67:1. */
+  background: #075e54;
+  color: var(--putih);
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  box-shadow: 0 6px 20px -8px rgba(28, 24, 48, 0.55);
+  transition: transform var(--dur) var(--ease);
+}
+.wa-float:hover {
+  transform: translateY(-2px);
+}
+.wa-float img {
+  width: 32px;
+  height: 32px;
+}
+.wa-float-label {
+  display: none;
+}
+@media (min-width: 1025px) {
+  .wa-float {
+    padding: 0.6rem 1.1rem 0.6rem 0.7rem;
+  }
+  .wa-float-label {
+    display: block;
+  }
+}
+/* keep the oval clear of the mobile sticky booking bar so neither tap target is covered */
+body:has(.sticky-bar) .wa-float {
+  bottom: 76px;
+}
+@media (min-width: 1025px) {
+  body:has(.sticky-bar) .wa-float {
+    bottom: 1rem;
+  }
+}
+
+/* R37 floating conversion banner. It sits in the LEFT corner while the WhatsApp oval sits in
+   the RIGHT corner, and below 620px it stacks ABOVE the oval, so the two tap targets can never
+   overlap. It FULLY UNMOUNTS on close, so no invisible click trapping layer is left behind. */
+.cta-float {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 79;
+  width: min(21rem, calc(100vw - 2rem));
+  padding: 1rem 2.25rem 1rem 1rem;
+  background: var(--senja);
+  color: var(--kanvas);
+  border: 2px solid var(--bara);
+  box-shadow: 0 12px 32px -18px rgba(21, 16, 42, 0.7);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity var(--dur-lambat) var(--ease), transform var(--dur-lambat) var(--ease);
+}
+.cta-float.in {
+  opacity: 1;
+  transform: none;
+}
+.cta-float p {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  line-height: 1.3;
+  max-width: none;
+}
+.cta-float-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--kanvas);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.cta-float-close:hover {
+  color: var(--bara);
+}
+@media (max-width: 620px) {
+  .cta-float {
+    left: 1rem;
+    right: 1rem;
+    bottom: 80px;
+    width: auto;
+  }
+  body:has(.sticky-bar) .cta-float {
+    bottom: 140px;
+  }
+}
+
+/* R13 welcome modal. R52: at 375px it is CENTRED and fits the viewport, never a narrow strip
+   overlaying the topbar. R53: it is portalled to document.body so the blurred header can never
+   become its containing block. */
+.wm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(21, 16, 42, 0.72);
+  opacity: 0;
+  transition: opacity var(--dur-lambat) var(--ease);
+  overflow-y: auto;
+}
+.wm-overlay.in {
+  opacity: 1;
+}
+.wm-panel {
+  position: relative;
+  width: min(34rem, 100%);
+  max-height: calc(100svh - 2rem);
+  overflow-y: auto;
+  background: var(--kanvas);
+  border: 2px solid var(--senja);
+  transform: translateY(18px) scale(0.98);
+  transition: transform var(--dur-lambat) var(--ease);
+}
+.wm-overlay.in .wm-panel {
+  transform: none;
+}
+.wm-stripe {
+  height: 8px;
+  background: linear-gradient(to right, var(--bara), var(--tanah) 45%, var(--lembayung));
+}
+.wm-close {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--tinta);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.wm-close:hover {
+  color: var(--tanah);
+}
+.wm-body {
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+.wm-body h2 {
+  margin-top: 0.35rem;
+}
+.wm-body p {
+  font-size: 0.95rem;
+}
+
+/* ---------------------------------------------------------------- 21. R34 reveal, R46 route */
+
+/* The revealed state is written at specificity (0,3,0) so it out ranks EVERY hide rule no matter
+   the source order. There is deliberately NO `.js .reveal { opacity: 0 }` rule at 0,2,0 to fight
+   with, because that plus source order is exactly how Mabrur shipped with every below the fold
+   section permanently invisible. Content stays visible with JS off, since only `.js` hides. */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity var(--dur-lambat) var(--ease), transform var(--dur-lambat) var(--ease);
+}
+.reveal.in,
+.js .reveal.in {
+  opacity: 1;
+  transform: none;
+}
+.js .reveal-d1 {
+  transition-delay: 60ms;
+}
+.js .reveal-d2 {
+  transition-delay: 120ms;
+}
+.js .reveal-d3 {
+  transition-delay: 180ms;
+}
+.js .reveal-d4 {
+  transition-delay: 240ms;
+}
+
+/* R46: every route change animates. Short, and it never delays first contentful paint. */
+.page-enter {
+  animation: pageIn 260ms var(--ease) both;
+}
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .page-enter {
+    animation: none;
+  }
+  .cta-float {
+    opacity: 1;
+    transform: none;
+  }
+  @view-transition {
+    navigation: none;
+  }
+}
