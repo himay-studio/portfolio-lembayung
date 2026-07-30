@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": ".validate-tmp",
+    "rootDir": "src",
+    "isolatedModules": false,
+    "incremental": false,
+    "jsx": "react-jsx"
+  },
+  "include": ["src/data/**/*.ts"]
+}
